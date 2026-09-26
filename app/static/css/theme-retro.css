@@ -1,0 +1,61 @@
+/* ============================================================
+   theme-retro.css —— 琥珀色 CRT 终端
+   上世纪 80 年代专家系统黄金年代的观感：
+   单色磷光、扫描线、轻微辉光
+   ============================================================ */
+
+:root {
+  --bg:           #0d0b06;
+  --panel-bg:     #14110a;
+  --panel-border: #3a2f14;
+  --text:         #ffb000;
+  --text-dim:     #8a6a1f;
+  --accent:       #ffcc33;
+  --ok:           #7fdf5f;
+  --warn:         #ff6b3d;
+  --hl-bg:        rgba(255, 204, 51, .07);
+  --input-bg:     #0a0804;
+  --btn-bg:       #1a1509;
+  --font-body:    "Courier New", "Consolas", ui-monospace, monospace;
+  --font-mono:    "Courier New", "Consolas", ui-monospace, monospace;
+  --radius:       2px;
+  --panel-shadow: 0 0 0 1px rgba(255, 176, 0, .04),
+                  0 0 28px rgba(255, 176, 0, .05) inset;
+}
+
+/* CRT 扫描线 */
+body {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, .25) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/* 磷光辉光 */
+.app   { text-shadow: 0 0 6px rgba(255, 176, 0, .22); }
+.title { text-shadow: 0 0 12px rgba(255, 176, 0, .45); }
+
+/* 面板标题后的闪烁光标 */
+.panel > h2::after {
+  content: "▌";
+  margin-left: 5px;
+  color: var(--accent);
+  animation: retro-blink 1.1s steps(1) infinite;
+}
+
+@keyframes retro-blink { 50% { opacity: 0; } }
+
+/* 按钮的机械键帽感 */
+button {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .55);
+}
+button:active {
+  box-shadow: 0 0 0 rgba(0, 0, 0, .55);
+}
+
+/* 事实条目前缀 */
+.fact-list li::before {
+  content: "› ";
+  color: var(--text-dim);
+}

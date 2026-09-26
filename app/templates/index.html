@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>通用专家系统 · 推理控制台</title>
+
+  <!-- 布局骨架：所有主题共用 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+
+  <!-- 主题样式表：切换主题 = 只换这个 link 的 href -->
+  <link id="theme-stylesheet"
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/theme-retro.css') }}"
+        data-css-base="{{ url_for('static', filename='css') }}">
+</head>
+
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <h1 class="title">通用专家系统<span class="subtitle">Inference Console</span></h1>
+    <label class="theme-picker">
+      主题
+      <select id="theme-select">
+        <option value="theme-retro.css">琥珀终端</option>
+        <option value="theme-paper.css">纸张</option>
+      </select>
+    </label>
+  </header>
+
+  <main class="layout">
+
+    <div class="col">
+      <section class="panel">
+        <h2>工作记忆 / Working Memory</h2>
+        <ul id="fact-list" class="fact-list"></ul>
+        <form id="fact-form" class="fact-form" autocomplete="off">
+          <input id="fact-name" type="text" placeholder="事实名，如「有羽毛」">
+          <input id="fact-value" type="text" placeholder="值（可留空）">
+          <button type="submit">断言</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>推理控制 / Inference</h2>
+        <div class="controls">
+          <button id="btn-step"  type="button">单步</button>
+          <button id="btn-run"   type="button">运行到底</button>
+          <button id="btn-reset" type="button">重置</button>
+        </div>
+        <dl class="status">
+          <dt>迭代次数</dt><dd id="stat-iter">0</dd>
+          <dt>停止原因</dt><dd id="stat-stop">—</dd>
+        </dl>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <h2>规则库 / Knowledge Base</h2>
+        <ul id="rule-list" class="rule-list"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>触发日志 / Trace</h2>
+        <ol id="log" class="log"></ol>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+<script src="{{ url_for('static', filename='js/console.js') }}"></script>
+</body>
+</html>

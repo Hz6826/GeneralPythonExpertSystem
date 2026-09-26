@@ -1,0 +1,333 @@
+/* ============================================================
+   base.css —— 布局骨架 + 主题变量契约
+   主题文件只需覆盖 :root 里的变量，无需改动本文件
+   ============================================================ */
+
+:root {
+    /* 主题契约（各 theme-*.css 覆盖这些值） */
+    --bg: #1b1b1b;
+    --panel-bg: #232323;
+    --panel-border: #3a3a3a;
+    --text: #eaeaea;
+    --text-dim: #9a9a9a;
+    --accent: #ffb000;
+    --ok: #4caf50;
+    --warn: #ff7043;
+    --hl-bg: rgba(255, 176, 0, .06);
+    --input-bg: #1a1a1a;
+    --btn-bg: #262626;
+    --font-body: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
+    --radius: 4px;
+    --panel-shadow: none;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    font-family: var(--font-body), sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    background-color: var(--bg);
+    transition: background-color .2s, color .2s;
+}
+
+.app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 20px 22px 56px;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--panel-border);
+    margin-bottom: 22px;
+}
+
+.title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: .5px;
+}
+
+.title .subtitle {
+    margin-left: 10px;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.theme-picker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.theme-picker select {
+    font: inherit;
+    padding: 4px 8px;
+    color: var(--text);
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius);
+}
+
+/* ---------- 两栏布局 ---------- */
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 820px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ---------- 面板 ---------- */
+.panel {
+    padding: 14px 16px 16px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius);
+    box-shadow: var(--panel-shadow);
+}
+
+.panel > h2 {
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px dashed var(--panel-border);
+}
+
+/* ---------- 列表通用 ---------- */
+.fact-list, .rule-list, .log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- 事实列表 ---------- */
+.fact-list li {
+    padding: 5px 8px;
+    margin-bottom: 4px;
+    border-left: 3px solid var(--accent);
+    font-family: var(--font-mono), monospace;
+    font-size: 13px;
+}
+
+.fact-list .fname {
+    color: var(--text);
+}
+
+.fact-list .fval {
+    color: var(--text-dim);
+}
+
+.fact-list .empty,
+.rule-list .empty {
+    color: var(--text-dim);
+    font-style: italic;
+    border-left-color: var(--panel-border);
+}
+
+/* ---------- 断言表单 ---------- */
+.fact-form {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.fact-form input {
+    flex: 1 1 110px;
+    min-width: 0;
+    padding: 5px 8px;
+    font: inherit;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius);
+}
+
+.fact-form input::placeholder {
+    color: var(--text-dim);
+    opacity: .65;
+}
+
+.fact-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ---------- 按钮 ---------- */
+button {
+    padding: 5px 14px;
+    font: inherit;
+    color: var(--text);
+    background: var(--btn-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background-color .15s;
+}
+
+button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+#btn-run {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* ---------- 状态表 ---------- */
+.status {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    margin: 0;
+    font-size: 13px;
+}
+
+.status dt {
+    color: var(--text-dim);
+}
+
+.status dd {
+    margin: 0;
+    font-family: var(--font-mono), monospace;
+}
+
+/* ---------- 规则列表 ---------- */
+.rule-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    border-left: 3px solid var(--panel-border);
+    font-size: 13px;
+    transition: opacity .2s, background-color .2s, border-color .2s;
+}
+
+.rule-list .rname {
+    flex: 1;
+}
+
+.rule-list .rprio {
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.rule-list li.applicable {
+    border-left-color: var(--accent);
+    background: var(--hl-bg);
+}
+
+.rule-list li.fired {
+    opacity: .45;
+}
+
+.rule-list li.fired::after {
+    content: "✓";
+    color: var(--ok);
+    font-weight: 700;
+}
+
+/* ---------- 日志 ---------- */
+.log {
+    counter-reset: step;
+    max-height: 340px;
+    overflow-y: auto;
+    font-family: var(--font-mono), monospace;
+    font-size: 12.5px;
+}
+
+.log li {
+    counter-increment: step;
+    position: relative;
+    padding: 4px 8px 4px 30px;
+    border-bottom: 1px dotted var(--panel-border);
+}
+
+.log li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 6px;
+    top: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.log .rname {
+    color: var(--accent);
+}
+
+.log .radded {
+    color: var(--text-dim);
+}
+
+.log .stop {
+    color: var(--warn);
+}
+
+.log .empty {
+    padding-left: 8px;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.log .empty::before {
+    content: none;
+}

@@ -1,0 +1,52 @@
+/* ============================================================
+   theme-paper.css —— 纸张 / 教科书
+   浅色、低饱和、一点纸面颗粒感
+   ============================================================ */
+
+:root {
+  --bg:           #f3efe6;
+  --panel-bg:     #fffdf8;
+  --panel-border: #d9d1bf;
+  --text:         #2b2721;
+  --text-dim:     #8b8271;
+  --accent:       #1f6feb;
+  --ok:           #2f9e44;
+  --warn:         #c92a2a;
+  --hl-bg:        #eef5ff;
+  --input-bg:     #ffffff;
+  --btn-bg:       #f8f5ee;
+  --font-body:    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono:    "SFMono-Regular", ui-monospace, Consolas, "Courier New", monospace;
+  --radius:       6px;
+  --panel-shadow: 0 1px 3px rgba(80, 68, 44, .08);
+}
+
+/* 纸面颗粒 */
+body {
+  background-image: radial-gradient(#e4ddce 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* 副标题带一道竖线 */
+.title .subtitle {
+  padding-left: 12px;
+  border-left: 1px solid var(--panel-border);
+}
+
+/* 面板内嵌一层淡边，模拟纸页 */
+.panel { position: relative; }
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(0, 0, 0, .025);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 事实条目前缀 */
+.fact-list li::before {
+  content: "• ";
+  color: var(--accent);
+}
