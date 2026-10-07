@@ -11,16 +11,21 @@
   --text:         #ffb000;
   --text-dim:     #8a6a1f;
   --accent:       #ffcc33;
+  --accent-fg:    #14110a;
   --ok:           #7fdf5f;
   --warn:         #ff6b3d;
+  --danger:       #ff6b3d;
   --hl-bg:        rgba(255, 204, 51, .07);
   --input-bg:     #0a0804;
   --btn-bg:       #1a1509;
+  --lock-bg:      rgba(13, 11, 6, .84);
+  --overlay-bg:   rgba(13, 11, 6, .62);
   --font-body:    "Courier New", "Consolas", ui-monospace, monospace;
   --font-mono:    "Courier New", "Consolas", ui-monospace, monospace;
   --radius:       2px;
   --panel-shadow: 0 0 0 1px rgba(255, 176, 0, .04),
                   0 0 28px rgba(255, 176, 0, .05) inset;
+  color-scheme:   dark;
 }
 
 /* CRT 扫描线 */
@@ -46,16 +51,21 @@ body {
 
 @keyframes retro-blink { 50% { opacity: 0; } }
 
-/* 按钮的机械键帽感 */
-button {
+/* 按钮的机械键帽感（.fname / .icon-btn 是「看起来像文本」的按钮，不加） */
+button:not(.fname):not(.icon-btn) {
   box-shadow: 0 2px 0 rgba(0, 0, 0, .55);
 }
-button:active {
+button:not(.fname):not(.icon-btn):active {
   box-shadow: 0 0 0 rgba(0, 0, 0, .55);
 }
 
-/* 事实条目前缀 */
+/* 事实条目前缀（空态由 base.css 的 .fact-list li.empty::before 关掉） */
 .fact-list li::before {
   content: "› ";
   color: var(--text-dim);
+}
+
+/* 事实行的琥珀色高亮用不到底色，改成发光更贴合 CRT */
+.fact-list li.is-new .fname {
+  text-shadow: 0 0 8px currentColor;
 }

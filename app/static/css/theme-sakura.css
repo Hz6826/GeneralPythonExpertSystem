@@ -1,0 +1,91 @@
+/* ============================================================
+   theme-sakura.css —— 樱 / Sakura
+   浅粉底色、花瓣般的柔和阴影，强调色取樱花的粉红；
+   深色文字保证在浅底上的可读性
+   ============================================================ */
+
+:root {
+  --bg:           #fff7f9;
+  --panel-bg:     #ffffff;
+  --panel-border: #f3d7e0;
+  --text:         #3d2b32;
+  --text-dim:     #9c7f89;
+  --accent:       #e8739b;
+  --accent-fg:    #ffffff;
+  --ok:           #4a9d6a;
+  --warn:         #d9743f;
+  --danger:       #d64560;
+  --hl-bg:        #fdeef4;
+  --input-bg:     #fffafc;
+  --btn-bg:       #fdf2f6;
+  --lock-bg:      rgba(255, 247, 249, .88);
+  --overlay-bg:   rgba(96, 62, 74, .30);
+  --font-body:    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono:    "SFMono-Regular", ui-monospace, Consolas, "Courier New", monospace;
+  --radius:       10px;
+  --panel-shadow: 0 2px 10px rgba(214, 154, 176, .16);
+  color-scheme:   light;
+}
+
+/* 背景上飘几片极淡的花瓣色块 */
+body {
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(232, 115, 155, .10), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(232, 115, 155, .07), transparent 38%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 面板标题左侧一道粉色竖条 */
+.panel > h2 {
+  padding-left: 9px;
+}
+
+.panel > h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: .7;
+}
+
+/* 事实条目前缀用花瓣 */
+.fact-list li::before {
+  content: "❀ ";
+  color: var(--accent);
+  opacity: .85;
+}
+
+/* 空白态同样不要前缀（base.css 的同名规则更具体，这里只是补齐观感） */
+.fact-list li.empty::before {
+  content: none;
+}
+
+/* 按钮圆一点，像糖果 */
+button {
+  border-radius: 999px;
+}
+
+.fact-form input,
+.fact-form select,
+.kb-row select,
+.bulk textarea,
+.md-block > pre {
+  border-radius: 8px;
+}
+
+/* 主按钮带一点柔光 */
+button.btn-primary {
+  box-shadow: 0 2px 8px rgba(232, 115, 155, .28);
+}
+
+/* 事实行的左侧色条改为圆头 */
+.fact-list li {
+  border-left-width: 3px;
+  border-radius: 0 6px 6px 0;
+}

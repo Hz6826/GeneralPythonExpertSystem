@@ -12,6 +12,8 @@ from core.model import Fact
 simple_frontend_bp = Blueprint('main', __name__)
 api_v1_bp = Blueprint('api_v1', __name__)
 
+API_PREFIX = "/api/v1"
+
 DEFAULT_SUCCESS_TEMPLATE: dict[str, int | str | None | dict] = {
     "code": 0,
     "status": "success",
@@ -23,6 +25,32 @@ DEFAULT_ERROR_TEMPLATE: dict[str, int | str | None] = {
     "status": "error",
     "message": "Unknown error"
 }
+
+
+def error_response(message, code, http_status=None):
+    """构造统一的错误信封。http_status 省略时与 code 相同。"""
+    error_dict = DEFAULT_ERROR_TEMPLATE.copy()
+    error_dict["code"] = code
+    error_dict["message"] = message
+    return jsonify(error_dict), (code if http_status is None else http_status)
+
+
+def register_error_handlers(app):
+    """让未注册的 /api/v1/* 路径也返回 JSON 信封。
+
+    注意这里必须是「全局 app.errorhandler + 路径判断」：
+      · Blueprint.app_errorhandler 是整站生效的，会把页面 404 也变成 JSON；
+      · Blueprint.errorhandler 又抓不到未注册路径 —— 路由失败时 request.blueprints
+        是空的，Flask 查不到蓝图级处理器。
+    非 /api/v1 的路径原样返回 e，交回 Flask 默认的 HTML 错误页。
+    """
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        path = request.path
+        if path == API_PREFIX or path.startswith(API_PREFIX + "/"):
+            return error_response(e.description, e.code)
+        return e
 
 
 def auto_handle_exception(func):
@@ -38,16 +66,11 @@ def auto_handle_exception(func):
                 return res
             raise TypeError(f"Unsupported return type: {type(res)}")
         except HTTPException as e:
-            error_dict = DEFAULT_ERROR_TEMPLATE.copy()
-            error_dict["code"] = e.code
-            error_dict["message"] = e.description
-            return jsonify(error_dict), e.code
+            return error_response(e.description, e.code)
         except Exception as e:
-            error_dict = DEFAULT_ERROR_TEMPLATE.copy()
-            if flask.current_app.debug:
-                error_dict["message"] = str(e)
+            message = str(e) if flask.current_app.debug else DEFAULT_ERROR_TEMPLATE["message"]
             logging.exception("Unhandled exception in %s", func.__name__)
-            return jsonify(error_dict), 500
+            return error_response(message, -1, 500)
 
     return wrapper
 
@@ -75,6 +98,18 @@ def list_example():
     return {"list": example.get_list()}
 
 
+@api_v1_bp.route("/example/doc", methods=["GET"])
+@auto_handle_exception
+def example_doc():
+    """返回示例知识库的说明文档（markdown 原文）。"""
+    name = request.args.get("name")
+    if not name:
+        raise BadRequest("Missing required query parameter: name")
+    if not example.has(name):
+        raise NotFound(f"Example not found: {name}")
+    return {"name": name, "doc": example.get_doc(name)}
+
+
 @api_v1_bp.route("/example/load", methods=["POST"])
 @auto_handle_exception
 def load_example():
@@ -83,7 +118,7 @@ def load_example():
         raise BadRequest("Missing required query parameter: name")
     if not example.has(name):
         raise NotFound(f"Example not found: {name}")
-    core.engine().load_kb(example.get(name).get_kb())
+    core.engine().load_kb(example.get(name).get_kb(), name=name)
     return {}
 
 
@@ -128,6 +163,8 @@ def engine_status():
         "iterations": eng.iterations,
         "stop_reason": eng.stop_reason,
         "reached_max_iterations": eng.reached_max_iterations,
+        "kb_loaded": eng.kb_loaded,
+        "kb_name": eng.kb_name,
     }
 
 
@@ -146,7 +183,7 @@ def step_engine():
     return {
         "fired": True,
         "name": rule.name,
-        "conditions": rule.conditions,
+        "conditions": [getattr(c, "__name__", repr(c)) for c in rule.conditions],
         "conclusion": rule.conclusion,
         "priority": rule.priority,
         "iterations": eng.iterations,

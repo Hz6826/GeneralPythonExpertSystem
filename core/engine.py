@@ -18,6 +18,7 @@ class InferenceEngine:
         self._lock = threading.RLock()
         self._running = False
         self._epoch = 0
+        self._kb_name = None  # 当前知识库的名字，供前端显示/取说明用
 
     def __iter__(self) -> Iterator[Rule]:
         return self
@@ -72,6 +73,18 @@ class InferenceEngine:
     def running(self) -> bool:
         return self._running
 
+    @property
+    def kb_name(self) -> str | None:
+        """当前知识库的名字（load_kb 记录，init 清空）。"""
+        with self._lock:
+            return self._kb_name
+
+    @property
+    def kb_loaded(self) -> bool:
+        """知识库里是否真的有规则；前端据此决定要不要锁住工作记忆。"""
+        with self._lock:
+            return bool(self.kb.rules)
+
     # step 作为别名:返回 Rule | None,给"单步调试"用
     def step(self) -> Rule | None:
         try:
@@ -120,6 +133,7 @@ class InferenceEngine:
             self._reset_locked()
             self.wm.clear()
             self.kb.clear()
+            self._kb_name = None
 
     def reset(self):
         with self._lock:
@@ -132,10 +146,11 @@ class InferenceEngine:
         self._stop_reason = None
         self._fired.clear()
 
-    def load_kb(self, kb, initial_facts=None):
-        """替换知识库并复位推理状态（可选注入初始事实）。"""
+    def load_kb(self, kb, initial_facts=None, name=None):
+        """替换知识库并复位推理状态（可选注入初始事实，可选记录知识库名）。"""
         with self._lock:
             self.kb = kb
+            self._kb_name = name
             self.wm.clear()
             if initial_facts:
                 for f in initial_facts:

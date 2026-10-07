@@ -1,0 +1,97 @@
+/* ============================================================
+   theme-nord.css —— 夜航 / 现代深色
+   低饱和的冷色调，接近常见的 IDE 深色主题：
+   面板有轻微层次、强调色克制、圆角柔和
+   ============================================================ */
+
+:root {
+  --bg:           #1b2028;
+  --panel-bg:     #232a34;
+  --panel-border: #333c49;
+  --text:         #dbe2ea;
+  --text-dim:     #8894a5;
+  --accent:       #6fb3f2;
+  --accent-fg:    #10161d;
+  --ok:           #6ed09a;
+  --warn:         #f2a06a;
+  --danger:       #ef7a85;
+  --hl-bg:        rgba(111, 179, 242, .12);
+  --input-bg:     #1a2028;
+  --btn-bg:       #2b333f;
+  --lock-bg:      rgba(27, 32, 40, .84);
+  --overlay-bg:   rgba(10, 14, 20, .58);
+  --font-body:    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono:    "JetBrains Mono", "Cascadia Code", ui-monospace, Consolas,
+                  "Courier New", monospace;
+  --radius:       8px;
+  --panel-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+  color-scheme:   dark;
+}
+
+/* 顶栏底部渐变，替代硬边框。
+   注意不要用 border-bottom-color: transparent —— base.css 里的
+   `body.is-running .topbar` 优先级更高，会把边框染成强调色，
+   叠加上这条渐变就成了一条双线。 */
+.topbar {
+  border-bottom-color: transparent;
+  background-image: linear-gradient(180deg, var(--panel-border), transparent);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 1px;
+}
+
+/* 运行时让出边框，改由渐变变亮来提示，避免双线 */
+body.is-running .topbar {
+  border-bottom-color: transparent;
+  background-image: linear-gradient(180deg, var(--accent), transparent);
+}
+
+/* 面板标题左侧的强调竖条 */
+.panel > h2 {
+  padding-left: 9px;
+  border-bottom: 0;
+}
+
+.panel > h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: .55;
+}
+
+/* 事实条目前缀 */
+.fact-list li::before {
+  content: "▸ ";
+  color: var(--accent);
+  opacity: .8;
+}
+
+/* 运行中的面板轻微发光 */
+body.is-running .panel:first-of-type {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(111, 179, 242, .25), var(--panel-shadow);
+}
+
+/* 轨迹条目用左侧色条区分类型，比整行染色更清爽 */
+.log li {
+  border-left: 2px solid transparent;
+}
+
+.log li.trace-rule {
+  border-left-color: var(--accent);
+}
+
+.log li.trace-run {
+  border-left-color: var(--ok);
+}
+
+.log li.trace-stop,
+.log li.trace-error {
+  border-left-color: var(--warn);
+}

@@ -1,1 +1,6 @@
 app/config.json
+
+# uv
+.uv/
+.uvcache/
+.venv/

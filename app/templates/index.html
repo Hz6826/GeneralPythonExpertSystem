@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
   <title>通用专家系统 · 推理控制台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1509'/%3E%3Cpath d='M8 24 L16 8 L24 24' stroke='%23ffb000' stroke-width='3' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
 
   <!-- 布局骨架：所有主题共用 -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
@@ -13,6 +15,23 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='css/theme-retro.css') }}"
         data-css-base="{{ url_for('static', filename='css') }}">
+
+  <!-- 在首次绘制前套用上次选择的主题，避免默认主题闪一下。
+       放在 link 之后、body 之前，保证同步执行。
+       这里的清单要和下面 <select> 的 option 保持一致（否则会去请求一个
+       不存在的 css，先闪一下再被 theme.js 纠正）。 -->
+  <script>
+    (function () {
+      var THEMES = ['theme-retro.css', 'theme-paper.css', 'theme-nord.css', 'theme-sakura.css'];
+      try {
+        var saved = localStorage.getItem('expert-theme');
+        var link = document.getElementById('theme-stylesheet');
+        if (saved && link && THEMES.indexOf(saved) !== -1) {
+          link.href = link.dataset.cssBase + '/' + saved;
+        }
+      } catch (e) { /* 隐私模式等场景忽略 */ }
+    })();
+  </script>
 </head>
 
 <body>
@@ -20,57 +39,204 @@
 
   <header class="topbar">
     <h1 class="title">通用专家系统<span class="subtitle">Inference Console</span></h1>
-    <label class="theme-picker">
-      主题
-      <select id="theme-select">
-        <option value="theme-retro.css">琥珀终端</option>
-        <option value="theme-paper.css">纸张</option>
-      </select>
-    </label>
+    <div class="topbar-right">
+      <span id="conn" class="badge badge-bad" title="GET /api/v1/">未连接</span>
+      <label class="theme-picker">
+        主题
+        <select id="theme-select">
+          <option value="theme-retro.css">琥珀终端</option>
+          <option value="theme-paper.css">纸张</option>
+          <option value="theme-nord.css">夜航</option>
+          <option value="theme-sakura.css">樱</option>
+        </select>
+      </label>
+    </div>
   </header>
+
+  <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
 
   <main class="layout">
 
+    <!-- ==================== 左栏 ==================== -->
     <div class="col">
-      <section class="panel">
-        <h2>工作记忆 / Working Memory</h2>
-        <ul id="fact-list" class="fact-list"></ul>
-        <form id="fact-form" class="fact-form" autocomplete="off">
-          <input id="fact-name" type="text" placeholder="事实名，如「有羽毛」">
-          <input id="fact-value" type="text" placeholder="值（可留空）">
-          <button type="submit">断言</button>
-        </form>
-      </section>
 
       <section class="panel">
         <h2>推理控制 / Inference</h2>
+        <div class="panel-lock" id="lock-engine" hidden>
+          <p>请先载入知识库</p>
+          <span class="hint">右侧「知识库」里选一个示例后点「载入」</span>
+        </div>
         <div class="controls">
-          <button id="btn-step"  type="button">单步</button>
-          <button id="btn-run"   type="button">运行到底</button>
-          <button id="btn-reset" type="button">重置</button>
+          <button id="btn-step" class="btn-primary" type="button"
+                  title="触发一条规则并观察结果（快捷键 S）">单步</button>
+          <button id="btn-step-all" type="button"
+                  title="反复调用 /engine/step 直到停机，每一步的规则都记进轨迹（快捷键 A）">单步到底</button>
+          <button id="btn-run" type="button"
+                  title="交给后端后台线程跑到不动点（快捷键 R）">运行到底</button>
+          <button id="btn-pause" type="button"
+                  title="暂停后台推理（快捷键 P）">暂停</button>
+          <button id="btn-reset" type="button"
+                  title="只复位迭代计数与停止原因，保留事实和知识库">重置</button>
+          <button id="btn-init" class="btn-danger" type="button"
+                  title="清空知识库与工作记忆">全部初始化</button>
         </div>
         <dl class="status">
+          <dt>运行状态</dt><dd id="stat-running">已停止</dd>
           <dt>迭代次数</dt><dd id="stat-iter">0</dd>
           <dt>停止原因</dt><dd id="stat-stop">—</dd>
+          <dt>事实条数</dt><dd id="stat-facts">0</dd>
         </dl>
+        <p class="hint" id="engine-hint">正在连接后端…</p>
       </section>
+
+      <section class="panel">
+        <h2>工作记忆 / Working Memory<span class="counter" id="fact-count">0</span></h2>
+        <div class="panel-lock" id="lock-facts" hidden>
+          <p>请先载入知识库</p>
+          <span class="hint">没有规则时断言事实没有意义，先载入一个示例知识库</span>
+        </div>
+        <ul id="fact-list" class="fact-list"></ul>
+
+        <form id="fact-form" class="fact-form" autocomplete="off">
+          <input id="fact-name" type="text" placeholder="事实名，如 wire_connected" aria-label="事实名">
+          <select id="fact-type" aria-label="值类型" title="值的解析方式">
+            <option value="auto">自动</option>
+            <option value="text">文本</option>
+            <option value="number">数字</option>
+            <option value="bool">布尔</option>
+            <option value="json">JSON</option>
+          </select>
+          <input id="fact-value" type="text" placeholder="值（留空 = true）" aria-label="值">
+          <button id="btn-assert" class="btn-primary" type="submit">断言</button>
+        </form>
+
+        <div class="row-actions">
+          <button id="btn-bulk-toggle" class="mini" type="button">批量断言…</button>
+          <button id="btn-clear-facts" class="mini mini-danger" type="button">清空事实</button>
+        </div>
+
+        <form id="bulk-form" class="bulk" hidden>
+          <textarea id="bulk-text" rows="6" spellcheck="false"
+                    aria-label="批量断言"
+                    placeholder="每行一条，支持 name 或 name = value：&#10;wire_connected&#10;link_down&#10;ping_gateway_fail&#10;timeout = 30&#10;vendor = &quot;H3C&quot;&#10;# 以 # 开头的行会被忽略"></textarea>
+          <div class="row-actions">
+            <button id="btn-bulk-assert" class="btn-primary" type="submit">提交</button>
+            <button id="btn-bulk-cancel" class="mini" type="button">收起</button>
+            <span class="hint" id="bulk-hint">值按「自动」规则推断：true/false → 布尔，纯数字 → 数字，其余 → 文本。</span>
+          </div>
+        </form>
+      </section>
+
     </div>
 
+    <!-- ==================== 右栏 ==================== -->
     <div class="col">
+
       <section class="panel">
-        <h2>规则库 / Knowledge Base</h2>
-        <ul id="rule-list" class="rule-list"></ul>
+        <h2>知识库 / Knowledge Base</h2>
+        <div class="kb-row">
+          <select id="example-select" aria-label="示例知识库">
+            <option value="">（加载中…）</option>
+          </select>
+          <button id="btn-load-example" class="btn-primary" type="button">载入</button>
+        </div>
+        <p class="hint" id="kb-hint">正在读取 /api/v1/example/list …</p>
       </section>
 
       <section class="panel">
-        <h2>触发日志 / Trace</h2>
+        <h2>推理轨迹 / Trace<span class="counter" id="log-count">0</span></h2>
         <ol id="log" class="log"></ol>
+        <div class="row-actions">
+          <button id="btn-copy-log" class="mini" type="button">复制轨迹</button>
+          <button id="btn-clear-log" class="mini" type="button">清空</button>
+          <span class="hint">快捷键：S 单步 · A 单步到底 · R 运行到底 · P 暂停</span>
+        </div>
       </section>
+
+      <details class="panel kb-doc" id="kb-doc-panel">
+        <summary>知识库说明 / Knowledge Base Guide</summary>
+        <div class="md" id="kb-doc-body"></div>
+      </details>
+
+      <details class="panel api-ref">
+        <summary>API 参考 / 后端契约</summary>
+        <p class="hint">
+          全部接口在 <code>/api/v1</code> 下，统一返回信封：
+          <code>{code, status, data}</code>（失败时是 <code>{code, status, message}</code>）。
+        </p>
+        <table class="api-table">
+          <thead>
+          <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+          <tr><td>GET</td><td>/api/v1/</td><td>健康检查</td></tr>
+          <tr><td>GET</td><td>/api/v1/example/list</td><td>示例知识库列表</td></tr>
+          <tr><td>POST</td><td>/api/v1/example/load?name=</td><td>载入示例（替换知识库并清空工作记忆）</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/init</td><td>清空知识库 + 工作记忆</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/reset</td><td>复位推理状态（保留事实与知识库）</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/run</td><td>后台运行到不动点</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/pause</td><td>暂停后台推理</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/status</td><td>运行状态 / 迭代数 / 停止原因</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/step</td><td>单步触发一条规则</td></tr>
+          <tr><td>GET</td><td>/api/v1/engine/facts</td><td>列出事实</td></tr>
+          <tr><td>POST</td><td>/api/v1/engine/facts</td><td>断言事实 <code>{name, value}</code></td></tr>
+          <tr><td>GET / DELETE</td><td>/api/v1/engine/facts/&lt;name&gt;</td><td>查询 / 删除单条事实</td></tr>
+          <tr><td>DELETE</td><td>/api/v1/engine/facts</td><td>清空事实</td></tr>
+          </tbody>
+        </table>
+        <p class="hint">
+          <strong>单步的返回形状：</strong>规则触发时 <code>data</code> 是
+          <code>{fired: true, name, conditions, conclusion, priority, iterations}</code>，
+          其中 <code>conditions</code> 是条件函数名列表（例如 <code>has_link_down</code>），
+          <code>conclusion</code> 是 <code>{name, value}</code>；
+          没有规则可触发时是 <code>{fired: false, stop_reason, iterations}</code>。
+        </p>
+        <p class="hint">
+          <strong>注意：</strong><code>POST /engine/run</code> 与 <code>POST /engine/pause</code>
+          在状态不匹配时（已在运行 / 未在运行）会抛 <code>RuntimeError</code>，被
+          <code>auto_handle_exception</code> 收敛成 <code>500 / code -1</code>；非 debug 模式下
+          <code>message</code> 还会被抹成 “Unknown error”。所以「暂停」按钮只在引擎运行时可用。
+        </p>
+        <p class="hint">
+          事实的 <code>value</code> 必须可哈希（不能是对象或数组），省略时后端默认 <code>true</code>。
+          事实名里带 <code>/</code> 虽然能写进工作记忆，但 <code>/engine/facts/&lt;name&gt;</code>
+          路由匹配不到斜杠，之后无法单条查询或删除，因此前端直接禁止。
+        </p>
+        <p class="hint">
+          未注册的路径不经过 <code>auto_handle_exception</code>，Flask 会直接返回 HTML 404；
+          控制台会把它显示为「服务端返回了非 JSON 响应」。
+        </p>
+      </details>
+
     </div>
 
   </main>
+
+  <footer class="footer">
+    <span>通用专家系统 · 前端控制台</span>
+    <span class="mono">/api/v1</span>
+  </footer>
+
 </div>
 
+<!-- 网页内的确认框（替代 window.confirm）：背景模糊 + 进出动画 -->
+<div id="confirm-overlay" class="confirm-overlay" hidden>
+  <div class="confirm-dialog" role="dialog" aria-modal="true"
+       aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <h3 class="confirm-title" id="confirm-title">请确认</h3>
+    <p class="confirm-message" id="confirm-message"></p>
+    <div class="confirm-actions">
+      <button id="confirm-cancel" type="button">取消</button>
+      <button id="confirm-ok" class="btn-danger" type="button">确定</button>
+    </div>
+  </div>
+</div>
+
+<noscript>
+  <p class="noscript">这个控制台需要 JavaScript 才能与推理引擎通信。</p>
+</noscript>
+
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script src="{{ url_for('static', filename='js/console.js') }}"></script>
 </body>

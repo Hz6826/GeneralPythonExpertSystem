@@ -1,4 +1,112 @@
 # ./example/network.py
+"""
+# 网络故障排查知识库 · network_troubleshooting
+
+## 用途
+把「用户观察到的网络现象」翻译成「最可能的故障根因」。知识库按 OSI 层次组织：
+物理层 → 链路层 → 网络层 → 传输层 → 应用层，另外还有 DHCP、无线、VPN/安全三个专题。
+
+## 推理方式
+每条规则的条件都是 `has_<事实名>`：只要工作记忆里存在同名事实，条件就成立
+（事实的 `value` 不参与匹配）。规则分两类：
+
+- **根因规则**（优先级 100 / 50 / 10）：结论直接是故障根因，例如 `cable_broken`、`stp_loop`。
+- **链式中间事实**（优先级 60）：结论是中间结论，例如 `physical_link_unstable`、
+  `name_resolution_broken`，它们会被下游规则继续消费，于是形成
+  「现象 → 中间事实 → 根因」的推理链。
+
+推理会一直进行到没有可匹配的规则（`no_rule`）或事实不再增长（`no_change`）为止。
+
+## 使用步骤
+1. 在「知识库」面板选中本示例并点「载入」；
+2. 用下面的模板（或自写的事实名）断言观察到的现象；
+3. 点「单步」逐条观察规则触发，或点「单步到底 / 运行到底」跑到不动点；
+4. 在「推理轨迹」里核对 IF（条件）/ THEN（结论），确认根因。
+
+## 断言语法
+一行一条事实，等号后面可以跟值：
+
+```text
+wire_connected              # 省略值 → true
+timeout = 30                # 数字
+vendor = "H3C"              # 字符串
+```
+
+## 示例事实模板
+点代码块右上角的「一键填入」会**先清空工作记忆**，再把这些事实写进去 ——
+相当于一键切换到该故障场景。如果想保留已有事实，请用「批量断言」表单。
+
+### 1. 物理层断链
+
+```facts
+wire_connected
+link_down
+ping_gateway_fail
+```
+
+会依次触发 PHY-001（网线/物理链路完全断开 → `cable_broken`）与
+L2-101（二层转发中断 → `l2_forwarding_broken`）。
+
+### 2. 二层环路与广播风暴
+
+```facts
+wire_connected
+link_down
+ping_gateway_fail
+broadcast_storm
+mac_flapping
+```
+
+物理层断链的两个现象之外再补 `broadcast_storm`、`mac_flapping`，
+推理链会继续走到 L2-102（交换平面过载）与
+L2-201（环路导致转发中断 → `stp_loop`）。
+
+### 3. 光纤/线缆质量异常
+
+```facts
+wire_connected
+link_flapping
+crc_error
+optical_power_low
+```
+
+触发 PHY-101 → PHY-102 → PHY-201 的链式推理，最终得到
+`optical_module_fault`；若把 `optical_power_low` 换成只看 `crc_error`，
+则落到 PHY-202 的 `bad_cable_or_connector`。
+
+### 4. DNS 解析中断
+
+```facts
+wire_connected
+ping_domain_fail
+dns_timeout
+```
+
+APP-101 先得出中间事实 `name_resolution_broken`，再由 APP-002 得出
+`dns_server_unreachable`。把最后一行换成 `dns_nxdomain` 会得到 `dns_record_missing`。
+
+### 5. MTU 大包丢失
+
+```facts
+wire_connected
+ping_small_ok
+ping_large_fail
+```
+
+小包通、大包不通，NET-014 给出 `mtu_mismatch`。
+
+### 6. 无线弱信号与信道干扰
+
+```facts
+wireless_client
+weak_signal
+packet_loss
+channel_interference
+```
+
+WLAN-101 → WLAN-104 → WLAN-202，得到 `wifi_signal_weak`；
+把最后一行换成 `ap_client_overload` 则走 WLAN-204 的 `ap_overloaded`。
+"""
 import copy
 
 from core.model import Fact, KnowledgeBase, Rule
